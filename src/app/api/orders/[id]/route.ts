@@ -12,7 +12,7 @@ const updateStatusSchema = z.object({
     status: z.nativeEnum(OrderStatus),
 });
 
-export async function PATCH(req: NextRequest, { params }: { params: { id: string } }) {
+export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== UserRole.ADMIN) { // Allow Agent?
