@@ -12,7 +12,7 @@ const updateStatusSchema = z.object({
     status: z.nativeEnum(OrderStatus),
 });
 
-export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
     try {
         const session = await auth();
         if (!session?.user || session.user.role !== UserRole.ADMIN) { // Allow Agent?
@@ -22,7 +22,8 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
 
         const body = await req.json();
         const validatedData = updateStatusSchema.parse(body);
-        const orderId = params.id;
+        const { id } = await params;
+        const orderId = id;
 
         await connectToDatabase();
         const Order = (await import('@/lib/models/Order')).default;
