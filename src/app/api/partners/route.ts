@@ -62,63 +62,63 @@ export async function GET(req: NextRequest) {
     }
 }
 
-export async function POST(req: NextRequest) {
-    try {
-        const session = await auth();
-        if (!session?.user || (session.user.role !== UserRole.ADMIN && session.user.role !== UserRole.AGENT)) {
-            return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
-        }
+// export async function POST(req: NextRequest) {
+//     try {
+//         const session = await auth();
+//         if (!session?.user || (session.user.role !== UserRole.ADMIN && session.user.role !== UserRole.AGENT)) {
+//             return NextResponse.json({ success: false, error: 'Unauthorized' }, { status: 401 });
+//         }
 
-        const body = await req.json();
-        const validatedData = createPartnerSchema.parse(body);
+//         const body = await req.json();
+//         const validatedData = createPartnerSchema.parse(body);
 
-        await connectToDatabase();
-        const Partner = (await import('@/lib/models/Partner')).default;
-        const Agent = (await import('@/lib/models/Agent')).default;
-        const User = (await import('@/lib/models/User')).default;
+//         await connectToDatabase();
+//         const Partner = (await import('@/lib/models/Partner')).default;
+//         const Agent = (await import('@/lib/models/Agent')).default;
+//         const User = (await import('@/lib/models/User')).default;
 
-        // If Creator is AGENT, force assignedAgent to be themselves
-        if (session.user.role === UserRole.AGENT) {
-            const agentProfile = await Agent.findOne({ userId: session.user.id });
-            if (!agentProfile) {
-                return NextResponse.json({ success: false, error: 'Agent profile not found' }, { status: 404 });
-            }
-            validatedData.assignedAgent = agentProfile._id.toString();
-        }
+//         // If Creator is AGENT, force assignedAgent to be themselves
+//         if (session.user.role === UserRole.AGENT) {
+//             const agentProfile = await Agent.findOne({ userId: session.user.id });
+//             if (!agentProfile) {
+//                 return NextResponse.json({ success: false, error: 'Agent profile not found' }, { status: 404 });
+//             }
+//             validatedData.assignedAgent = agentProfile._id.toString();
+//         }
 
-        // 1. Create User
-        const hashedPassword = await bcrypt.hash(validatedData.password, 10);
-        const user = await User.create({
-            name: validatedData.name,
-            email: validatedData.email,
-            phone: validatedData.phone,
-            password: hashedPassword,
-            role: UserRole.PARTNER,
-        });
+//         // 1. Create User
+//         const hashedPassword = await bcrypt.hash(validatedData.password, 10);
+//         const user = await User.create({
+//             name: validatedData.name,
+//             email: validatedData.email,
+//             phone: validatedData.phone,
+//             password: hashedPassword,
+//             role: UserRole.PARTNER,
+//         });
 
-        // 2. Create Partner
-        const partner = await Partner.create({
-            userId: user._id,
-            businessName: validatedData.businessName,
-            partnerType: validatedData.partnerType,
-            gstNumber: validatedData.gstNumber,
-            address: validatedData.address,
-            assignedAgent: validatedData.assignedAgent,
-            creditLimit: validatedData.creditLimit || 0,
-        });
+//         // 2. Create Partner
+//         const partner = await Partner.create({
+//             userId: user._id,
+//             businessName: validatedData.businessName,
+//             partnerType: validatedData.partnerType,
+//             gstNumber: validatedData.gstNumber,
+//             address: validatedData.address,
+//             assignedAgent: validatedData.assignedAgent,
+//             creditLimit: validatedData.creditLimit || 0,
+//         });
 
-        // 3. Update Agent's assignedPartners list if assigned
-        if (partner.assignedAgent) {
-            await Agent.findByIdAndUpdate(partner.assignedAgent, {
-                $addToSet: { assignedPartners: partner._id }
-            });
-        }
+//         // 3. Update Agent's assignedPartners list if assigned
+//         if (partner.assignedAgent) {
+//             await Agent.findByIdAndUpdate(partner.assignedAgent, {
+//                 $addToSet: { assignedPartners: partner._id }
+//             });
+//         }
 
-        return NextResponse.json({ success: true, data: partner }, { status: 201 });
-    } catch (error: any) {
-        if (error instanceof z.ZodError) {
-            return NextResponse.json({ success: false, error: 'Validation Error', details: error.errors }, { status: 400 });
-        }
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
-    }
-}
+//         return NextResponse.json({ success: true, data: partner }, { status: 201 });
+//     } catch (error: any) {
+//         if (error instanceof z.ZodError) {
+//             return NextResponse.json({ error: true, message: 'Validation Error', details: error.message }, { status: 400 });
+//         }
+//         return NextResponse.json({ error: true, message: error.message }, { status: 500 });
+//     }
+// }
